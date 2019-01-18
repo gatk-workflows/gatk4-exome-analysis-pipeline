@@ -1,8 +1,8 @@
 version 1.0
 
-import "../tasks/GermlineVariantDiscovery.wdl" as Calling
-import "../tasks/Qc.wdl" as QC
-import "../tasks/Utilities.wdl" as Utils
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/GermlineVariantDiscovery.wdl" as Calling
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Qc.wdl" as QC
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Utilities.wdl" as Utils
 
 workflow BamToGvcf {
 
