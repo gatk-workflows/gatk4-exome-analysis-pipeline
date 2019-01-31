@@ -28,14 +28,14 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/UnmappedBamToAlignedBam.wdl" as ToBam
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/AggregatedBamQC.wdl" as AggregatedQC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/GermlineVariantDiscovery.wdl" as Calling
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/BamToCram.wdl" as ToCram
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/tasks/BamToGvcf.wdl" as ToGvcf
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/dev/structs/GermlineStructs.wdl"
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/UnmappedBamToAlignedBam.wdl" as ToBam
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/AggregatedBamQC.wdl" as AggregatedQC
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/GermlineVariantDiscovery.wdl" as Calling
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Qc.wdl" as QC
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Utilities.wdl" as Utils
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/BamToCram.wdl" as ToCram
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/BamToGvcf.wdl" as ToGvcf
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/structs/GermlineStructs.wdl"
 
 # WORKFLOW DEFINITION
 workflow ExomeGermlineSingleSample {

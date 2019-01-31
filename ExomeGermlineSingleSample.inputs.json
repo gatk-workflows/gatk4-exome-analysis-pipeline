@@ -1,9 +1,9 @@
 {
   "ExomeGermlineSingleSample.sample_and_unmapped_bams": {
     "final_gvcf_base_name": "HG00133.GRCh38DH.exome",
-    "unmapped_bam_suffix": "HG00133.GRCh38DH.exome",
+    "unmapped_bam_suffix": ".unmapped.bam",
     "flowcell_unmapped_bams": ["gs://gatk-best-practices/exome-analysis-pipeline/SRR099969.unmapped.bam"],
-    "sample_name": "HG00133.alt_bwamem_GRCh38DH.20150826.GBR.exome",
+    "sample_name": "HG00133",
     "base_file_name": "HG00133.GRCh38DH.exome"
   },
 

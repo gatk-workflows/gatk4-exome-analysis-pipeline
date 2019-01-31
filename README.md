@@ -12,7 +12,7 @@ This WDL pipeline implements data pre-processing and initial variant calling acc
 - - all reads must have an RG tag
 - GVCF output names must end in ".g.vcf.gz"
 - Reference genome must be Hg38 with ALT contigs
-- Uniqe exome calling, target, and bait [.interval_list](https://software.broadinstitute.org/gatk/documentation/article?id=11009) obtained from sequencing provider
+- Unique exome calling, target, and bait [.interval_list](https://software.broadinstitute.org/gatk/documentation/article?id=11009) obtained from sequencing provider. Generally the calling, target, and bait files will not be the same.
 
 ### Output :
 - Cram, cram index, and cram md5
