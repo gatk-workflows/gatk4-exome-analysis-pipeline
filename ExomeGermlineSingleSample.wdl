@@ -46,7 +46,9 @@ workflow ExomeGermlineSingleSample {
     GermlineSingleSampleReferences references
     File target_interval_list
     File bait_interval_list
-    File? bait_set_name
+    File bait_set_name
+
+    Boolean provide_bam_output = false
     File? haplotype_database_file
   }
 
@@ -91,7 +93,7 @@ workflow ExomeGermlineSingleSample {
       agg_preemptible_tries = papi_settings.agg_preemptible_tries
   }
 
-  call ToGvcf.BamToGvcf as BamToGvcf {
+  call ToGvcf.VariantCalling as BamToGvcf {
     input:
       calling_interval_list = references.calling_interval_list,
       evaluation_interval_list = references.evaluation_interval_list,
@@ -105,7 +107,7 @@ workflow ExomeGermlineSingleSample {
       dbsnp_vcf = references.dbsnp_vcf,
       dbsnp_vcf_index = references.dbsnp_vcf_index,
       base_file_name = sample_and_unmapped_bams.base_file_name,
-      final_gvcf_base_name = sample_and_unmapped_bams.final_gvcf_base_name,
+      final_vcf_base_name = sample_and_unmapped_bams.final_gvcf_base_name,
       agg_preemptible_tries = papi_settings.agg_preemptible_tries
   }
 
@@ -119,6 +121,11 @@ workflow ExomeGermlineSingleSample {
       target_interval_list = target_interval_list,
       bait_interval_list = bait_interval_list,
       preemptible_tries = papi_settings.agg_preemptible_tries
+  }
+
+  if (provide_bam_output) {
+    File provided_output_bam = UnmappedBamToAlignedBam.output_bam
+    File provided_output_bam_index = UnmappedBamToAlignedBam.output_bam_index
   }
 
   # Outputs that will be retained when execution is complete
@@ -160,10 +167,13 @@ workflow ExomeGermlineSingleSample {
     File duplicate_metrics = UnmappedBamToAlignedBam.duplicate_metrics
     File output_bqsr_reports = UnmappedBamToAlignedBam.output_bqsr_reports
 
-    File gvcf_summary_metrics = BamToGvcf.gvcf_summary_metrics
-    File gvcf_detail_metrics = BamToGvcf.gvcf_detail_metrics
+    File gvcf_summary_metrics = BamToGvcf.vcf_summary_metrics
+    File gvcf_detail_metrics = BamToGvcf.vcf_detail_metrics
 
     File hybrid_selection_metrics = CollectHsMetrics.metrics
+
+    File? output_bam = provided_output_bam
+    File? output_bam_index = provided_output_bam_index
 
     File output_cram = BamToCram.output_cram
     File output_cram_index = BamToCram.output_cram_index
