@@ -1,4 +1,5 @@
 version 1.0
+
 ## Copyright Broad Institute, 2018
 ##
 ## This WDL defines tasks used for BAM file processing of human whole-genome or exome sequencing data.
@@ -25,7 +26,7 @@ task SortSam {
   # SortSam spills to disk a lot more because we are only store 300000 records in RAM now because its faster for our data so it needs
   # more disk space.  Also it spills to disk in an uncompressed format so we need to account for that with a larger multiplier
   Float sort_sam_disk_multiplier = 3.25
-  Int disk_size = ceil(sort_sam_disk_multiplier * size(input_bam, "GB")) + 20
+  Int disk_size = ceil(sort_sam_disk_multiplier * size(input_bam, "GiB")) + 20
 
   command {
     java -Dsamjdk.compression_level=~{compression_level} -Xms4000m -jar /usr/gitc/picard.jar \
@@ -42,7 +43,7 @@ task SortSam {
     docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
     disks: "local-disk " + disk_size + " HDD"
     cpu: "1"
-    memory: "5000 MB"
+    memory: "5000 MiB"
     preemptible: preemptible_tries
   }
   output {
@@ -64,7 +65,7 @@ task SortSamSpark {
   # SortSam spills to disk a lot more because we are only store 300000 records in RAM now because its faster for our data so it needs
   # more disk space.  Also it spills to disk in an uncompressed format so we need to account for that with a larger multiplier
   Float sort_sam_disk_multiplier = 3.25
-  Int disk_size = ceil(sort_sam_disk_multiplier * size(input_bam, "GB")) + 20
+  Int disk_size = ceil(sort_sam_disk_multiplier * size(input_bam, "GiB")) + 20
 
   command {
     set -e
@@ -82,7 +83,7 @@ task SortSamSpark {
     disks: "local-disk " + disk_size + " HDD"
     bootDiskSizeGb: "15"
     cpu: "16"
-    memory: "102 GB"
+    memory: "102 GiB"
     preemptible: preemptible_tries
   }
   output {
@@ -105,19 +106,23 @@ task MarkDuplicates {
     # Sometimes we wish to supply "null" in order to turn off optical duplicate detection
     # This can be desirable if you don't mind the estimated library size being wrong and optical duplicate detection is taking >7 days and failing
     String? read_name_regex
+    Int memory_multiplier = 1
   }
 
   # The merged bam will be smaller than the sum of the parts so we need to account for the unmerged inputs and the merged output.
   # Mark Duplicates takes in as input readgroup bams and outputs a slightly smaller aggregated bam. Giving .25 as wiggleroom
-  Float md_disk_multiplier = 2.25
+  Float md_disk_multiplier = 3
   Int disk_size = ceil(md_disk_multiplier * total_input_size) + 20
+
+  Int memory_size = ceil(8 * memory_multiplier)
+  Int java_memory_size = (memory_size - 2)
 
   # Task is assuming query-sorted input so that the Secondary and Supplementary reads get marked correctly
   # This works because the output of BWA is query-grouped and therefore, so is the output of MergeBamAlignment.
   # While query-grouped isn't actually query-sorted, it's good enough for MarkDuplicates with ASSUME_SORT_ORDER="queryname"
 
   command {
-    java -Dsamjdk.compression_level=~{compression_level} -Xms4000m -jar /usr/gitc/picard.jar \
+    java -Dsamjdk.compression_level=~{compression_level} -Xms~{java_memory_size}g -jar /usr/gitc/picard.jar \
       MarkDuplicates \
       INPUT=~{sep=' INPUT=' input_bams} \
       OUTPUT=~{output_bam_basename}.bam \
@@ -132,12 +137,70 @@ task MarkDuplicates {
   runtime {
     docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
     preemptible: preemptible_tries
-    memory: "7 GB"
+    memory: "~{memory_size} GiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
     File output_bam = "~{output_bam_basename}.bam"
     File duplicate_metrics = "~{metrics_filename}"
+  }
+}
+
+task MarkDuplicatesSpark {
+  input {
+    Array[File] input_bams
+    String output_bam_basename
+    String metrics_filename
+    Float total_input_size
+    Int compression_level
+    Int preemptible_tries
+
+    String? read_name_regex
+    Int memory_multiplier = 3
+    Int cpu_size = 6
+  }
+
+  # The merged bam will be smaller than the sum of the parts so we need to account for the unmerged inputs and the merged output.
+  # Mark Duplicates takes in as input readgroup bams and outputs a slightly smaller aggregated bam. Giving 2.5 as wiggleroom
+  Float md_disk_multiplier = 2.5
+  Int disk_size = ceil(md_disk_multiplier * total_input_size) + 20
+
+  Int memory_size = ceil(16 * memory_multiplier)
+  Int java_memory_size = (memory_size - 6)
+
+  String output_bam_location = "~{output_bam_basename}.bam"
+
+  # Removed options ASSUME_SORT_ORDER, CLEAR_DT, and ADD_PG_TAG_TO_READS as it seems like they are a) not implemented
+  #   in MarkDuplicatesSpark, and/or b) are set to "false" aka "don't do" anyhow.
+  # MarkDuplicatesSpark requires PAPIv2
+  command <<<
+    set -e
+    export GATK_LOCAL_JAR=/root/gatk.jar
+    gatk --java-options "-Dsamjdk.compression_level=~{compression_level} -Xmx~{java_memory_size}g" \
+      MarkDuplicatesSpark \
+      --input ~{sep=' --input ' input_bams} \
+      --output ~{output_bam_location} \
+      --metrics-file ~{metrics_filename} \
+      --read-validation-stringency SILENT \
+      ~{"--read-name-regex " + read_name_regex} \
+      --optical-duplicate-pixel-distance 2500 \
+      --treat-unsorted-as-querygroup-ordered \
+      --create-output-bam-index false \
+      -- --conf spark.local.dir=/mnt/tmp --spark-master 'local[16]' --conf 'spark.kryo.referenceTracking=false'
+  >>>
+
+  runtime {
+    docker: "jamesemery/gatknightly:gatkMasterSnapshot44ca2e9e84a"
+    disks: "/mnt/tmp " + ceil(2.1 * total_input_size) + " LOCAL, local-disk " + disk_size + " HDD"
+    bootDiskSizeGb: "50"
+    cpu: cpu_size
+    memory: "~{memory_size} GiB"
+    preemptible: preemptible_tries
+  }
+
+  output {
+    File output_bam = output_bam_location
+    File duplicate_metrics = metrics_filename
   }
 }
 
@@ -159,9 +222,9 @@ task BaseRecalibrator {
     String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.0.10.1"
   }
 
-  Float ref_size = size(ref_fasta, "GB") + size(ref_fasta_index, "GB") + size(ref_dict, "GB")
-  Float dbsnp_size = size(dbsnp_vcf, "GB")
-  Int disk_size = ceil((size(input_bam, "GB") / bqsr_scatter) + ref_size + dbsnp_size) + 20
+  Float ref_size = size(ref_fasta, "GiB") + size(ref_fasta_index, "GiB") + size(ref_dict, "GiB")
+  Float dbsnp_size = size(dbsnp_vcf, "GiB")
+  Int disk_size = ceil((size(input_bam, "GiB") / bqsr_scatter) + ref_size + dbsnp_size) + 20
 
   parameter_meta {
     input_bam: {
@@ -185,7 +248,7 @@ task BaseRecalibrator {
   runtime {
     docker: gatk_docker
     preemptible: preemptible_tries
-    memory: "6 GB"
+    memory: "6 GiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
@@ -207,10 +270,13 @@ task ApplyBQSR {
     Int bqsr_scatter
     Int preemptible_tries
     String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.0.10.1"
+    Int memory_multiplier = 1
   }
 
-  Float ref_size = size(ref_fasta, "GB") + size(ref_fasta_index, "GB") + size(ref_dict, "GB")
-  Int disk_size = ceil((size(input_bam, "GB") * 3 / bqsr_scatter) + ref_size) + 20
+  Float ref_size = size(ref_fasta, "GiB") + size(ref_fasta_index, "GiB") + size(ref_dict, "GiB")
+  Int disk_size = ceil((size(input_bam, "GiB") * 3 / bqsr_scatter) + ref_size) + 20
+
+  Int memory_size = ceil(3500 * memory_multiplier)
 
   parameter_meta {
     input_bam: {
@@ -238,7 +304,7 @@ task ApplyBQSR {
   runtime {
     docker: gatk_docker
     preemptible: preemptible_tries
-    memory: "3500 MB"
+    memory: "~{memory_size} MiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
@@ -265,7 +331,7 @@ task GatherBqsrReports {
   runtime {
     docker: gatk_docker
     preemptible: preemptible_tries
-    memory: "3500 MB"
+    memory: "3500 MiB"
     disks: "local-disk 20 HDD"
   }
   output {
@@ -297,7 +363,7 @@ task GatherSortedBamFiles {
   runtime {
     docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
     preemptible: preemptible_tries
-    memory: "3 GB"
+    memory: "3 GiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
@@ -332,7 +398,7 @@ task GatherUnsortedBamFiles {
   runtime {
     docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
     preemptible: preemptible_tries
-    memory: "3 GB"
+    memory: "3 GiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
@@ -365,9 +431,10 @@ task CheckContamination {
     String output_prefix
     Int preemptible_tries
     Float contamination_underestimation_factor
+    Boolean disable_sanity_check = false
   }
 
-  Int disk_size = ceil(size(input_bam, "GB") + size(ref_fasta, "GB")) + 30
+  Int disk_size = ceil(size(input_bam, "GiB") + size(ref_fasta, "GiB")) + 30
 
   command <<<
     set -e
@@ -383,6 +450,7 @@ task CheckContamination {
     --UDPath ~{contamination_sites_ud} \
     --MeanPath ~{contamination_sites_mu} \
     --BedPath ~{contamination_sites_bed} \
+    ~{true="--DisableSanityCheck" false="" disable_sanity_check} \
     1>/dev/null
 
     # used to read from the selfSM file and calculate contamination, which gets printed out
@@ -410,9 +478,10 @@ task CheckContamination {
   >>>
   runtime {
     preemptible: preemptible_tries
-    memory: "2 GB"
+    memory: "4 GiB"
     disks: "local-disk " + disk_size + " HDD"
-    docker: "us.gcr.io/broad-gotc-prod/verify-bam-id:c8a66425c312e5f8be46ab0c41f8d7a1942b6e16-1500298351"
+    docker: "us.gcr.io/broad-gotc-prod/verify-bam-id:c1cba76e979904eb69c31520a0d7f5be63c72253-1553018888"
+    cpu: "2"
   }
   output {
     File selfSM = "~{output_prefix}.selfSM"

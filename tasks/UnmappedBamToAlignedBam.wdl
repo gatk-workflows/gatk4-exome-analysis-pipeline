@@ -15,12 +15,12 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Alignment.wdl" as Alignment
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/SplitLargeReadGroup.wdl" as SplitRG
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/structs/GermlineStructs.wdl"
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Alignment.wdl" as Alignment
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/SplitLargeReadGroup.wdl" as SplitRG
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Qc.wdl" as QC
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/BamProcessing.wdl" as Processing
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Utilities.wdl" as Utils
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/structs/GermlineStructs.wdl"
 
 # WORKFLOW DEFINITION
 workflow UnmappedBamToAlignedBam {
@@ -50,7 +50,7 @@ workflow UnmappedBamToAlignedBam {
   # Align flowcell-level unmapped input bams in parallel
   scatter (unmapped_bam in sample_and_unmapped_bams.flowcell_unmapped_bams) {
 
-    Float unmapped_bam_size = size(unmapped_bam, "GB")
+    Float unmapped_bam_size = size(unmapped_bam, "GiB")
 
     String unmapped_bam_basename = basename(unmapped_bam, sample_and_unmapped_bams.unmapped_bam_suffix)
 
@@ -93,7 +93,7 @@ workflow UnmappedBamToAlignedBam {
 
     File output_aligned_bam = select_first([SamToFastqAndBwaMemAndMba.output_bam, SplitRG.aligned_bam])
 
-    Float mapped_bam_size = size(output_aligned_bam, "GB")
+    Float mapped_bam_size = size(output_aligned_bam, "GiB")
 
     # QC the aligned but unsorted readgroup BAM
     # no reference as the input here is unsorted, providing a reference would cause an error
@@ -138,7 +138,7 @@ workflow UnmappedBamToAlignedBam {
       preemptible_tries = if data_too_large_for_preemptibles then 0 else papi_settings.agg_preemptible_tries
   }
 
-  Float agg_bam_size = size(SortSampleBam.output_bam, "GB")
+  Float agg_bam_size = size(SortSampleBam.output_bam, "GiB")
 
   if (defined(haplotype_database_file)) {
     # Check identity of fingerprints across readgroups

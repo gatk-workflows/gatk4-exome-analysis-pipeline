@@ -14,10 +14,10 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Alignment.wdl" as Alignment
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.0.0/structs/GermlineStructs.wdl"
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Alignment.wdl" as Alignment
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/BamProcessing.wdl" as Processing
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Utilities.wdl" as Utils
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/structs/GermlineStructs.wdl"
 
 workflow SplitLargeReadGroup {
   input {
@@ -46,7 +46,7 @@ workflow SplitLargeReadGroup {
   }
 
   scatter(unmapped_bam in SamSplitter.split_bams) {
-    Float current_unmapped_bam_size = size(unmapped_bam, "GB")
+    Float current_unmapped_bam_size = size(unmapped_bam, "GiB")
     String current_name = basename(unmapped_bam, ".bam")
 
     call Alignment.SamToFastqAndBwaMemAndMba as SamToFastqAndBwaMemAndMba {
@@ -60,7 +60,7 @@ workflow SplitLargeReadGroup {
         preemptible_tries = preemptible_tries
     }
 
-    Float current_mapped_size = size(SamToFastqAndBwaMemAndMba.output_bam, "GB")
+    Float current_mapped_size = size(SamToFastqAndBwaMemAndMba.output_bam, "GiB")
   }
 
   call Utils.SumFloats as SumSplitAlignedSizes {
