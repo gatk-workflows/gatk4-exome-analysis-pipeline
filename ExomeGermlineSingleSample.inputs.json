@@ -40,6 +40,7 @@
 
   "ExomeGermlineSingleSample.target_interval_list": "gs://broad-references/hg38/v0/exome_calling_regions.v1.interval_list",
   "ExomeGermlineSingleSample.bait_interval_list": "gs://broad-references/hg38/v0/exome_calling_regions.v1.interval_list",
+  "ExomeGermlineSingleSample.bait_set_name": "whole_exome_illumina_coding_v1",
 
   "ExomeGermlineSingleSample.papi_settings": {
     "preemptible_tries": 3,
