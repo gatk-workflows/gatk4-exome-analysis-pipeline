@@ -40,7 +40,7 @@ task SortSam {
 
   }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     disks: "local-disk " + disk_size + " HDD"
     cpu: "1"
     memory: "5000 MiB"
@@ -114,8 +114,8 @@ task MarkDuplicates {
   Float md_disk_multiplier = 3
   Int disk_size = ceil(md_disk_multiplier * total_input_size) + 20
 
-  Int memory_size = ceil(8 * memory_multiplier)
-  Int java_memory_size = (memory_size - 2)
+  Float memory_size = 7.5 * memory_multiplier
+  Int java_memory_size = (ceil(memory_size) - 2)
 
   # Task is assuming query-sorted input so that the Secondary and Supplementary reads get marked correctly
   # This works because the output of BWA is query-grouped and therefore, so is the output of MergeBamAlignment.
@@ -135,7 +135,7 @@ task MarkDuplicates {
       ADD_PG_TAG_TO_READS=false
   }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     preemptible: preemptible_tries
     memory: "~{memory_size} GiB"
     disks: "local-disk " + disk_size + " HDD"
@@ -235,7 +235,7 @@ task BaseRecalibrator {
   command {
     gatk --java-options "-XX:GCTimeLimit=50 -XX:GCHeapFreeLimit=10 -XX:+PrintFlagsFinal \
       -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+PrintGCDetails \
-      -Xloggc:gc_log.log -Xms4000m" \
+      -Xloggc:gc_log.log -Xms5g" \
       BaseRecalibrator \
       -R ~{ref_fasta} \
       -I ~{input_bam} \
@@ -361,7 +361,7 @@ task GatherSortedBamFiles {
       CREATE_MD5_FILE=true
     }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     preemptible: preemptible_tries
     memory: "3 GiB"
     disks: "local-disk " + disk_size + " HDD"
@@ -396,13 +396,65 @@ task GatherUnsortedBamFiles {
       CREATE_MD5_FILE=false
     }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     preemptible: preemptible_tries
     memory: "3 GiB"
     disks: "local-disk " + disk_size + " HDD"
   }
   output {
     File output_bam = "~{output_bam_basename}.bam"
+  }
+}
+
+task GenerateSubsettedContaminationResources {
+  input {
+    String bait_set_name
+    File target_interval_list
+    File contamination_sites_ud
+    File contamination_sites_bed
+    File contamination_sites_mu
+    Int preemptible_tries
+  }
+
+  String output_ud = bait_set_name + "." + basename(contamination_sites_ud)
+  String output_bed = bait_set_name + "." + basename(contamination_sites_bed)
+  String output_mu = bait_set_name + "." + basename(contamination_sites_mu)
+  String target_overlap_counts = "target_overlap_counts.txt"
+
+  command <<<
+    set -e -o pipefail
+
+    grep -vE "^@" ~{target_interval_list} |
+       awk -v OFS='\t' '$2=$2-1' |
+       /app/bedtools intersect -c -a ~{contamination_sites_bed} -b - |
+       cut -f6 > ~{target_overlap_counts}
+
+    function restrict_to_overlaps() {
+        # print lines from whole-genome file from loci with non-zero overlap
+        # with target intervals
+        WGS_FILE=$1
+        EXOME_FILE=$2
+        paste ~{target_overlap_counts} $WGS_FILE |
+            grep -Ev "^0" |
+            cut -f 2- > $EXOME_FILE
+        echo "Generated $EXOME_FILE"
+    }
+
+    restrict_to_overlaps ~{contamination_sites_ud} ~{output_ud}
+    restrict_to_overlaps ~{contamination_sites_bed} ~{output_bed}
+    restrict_to_overlaps ~{contamination_sites_mu} ~{output_mu}
+
+  >>>
+  runtime {
+    preemptible: preemptible_tries
+    memory: "3.5 GiB"
+    disks: "local-disk 10 HDD"
+    docker: "us.gcr.io/broad-gotc-prod/bedtools:2.27.1"
+  }
+  output {
+    File subsetted_contamination_ud = output_ud
+    File subsetted_contamination_bed = output_bed
+    File subsetted_contamination_mu = output_mu
   }
 }
 
@@ -478,10 +530,10 @@ task CheckContamination {
   >>>
   runtime {
     preemptible: preemptible_tries
-    memory: "4 GiB"
+    memory: "7.5 GiB"
     disks: "local-disk " + disk_size + " HDD"
     docker: "us.gcr.io/broad-gotc-prod/verify-bam-id:c1cba76e979904eb69c31520a0d7f5be63c72253-1553018888"
-    cpu: "2"
+    cpu: 2
   }
   output {
     File selfSM = "~{output_prefix}.selfSM"

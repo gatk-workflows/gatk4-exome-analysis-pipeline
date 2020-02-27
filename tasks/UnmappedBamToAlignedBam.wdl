@@ -1,4 +1,5 @@
 version 1.0
+
 ## Copyright Broad Institute, 2018
 ##
 ## This WDL pipeline implements data processing according to the GATK Best Practices (June 2016)
@@ -15,19 +16,24 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Alignment.wdl" as Alignment
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/SplitLargeReadGroup.wdl" as SplitRG
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.1.0/structs/GermlineStructs.wdl"
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Alignment.wdl" as Alignment
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/SplitLargeReadGroup.wdl" as SplitRG
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Qc.wdl" as QC
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/BamProcessing.wdl" as Processing
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Utilities.wdl" as Utils
+import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl" as Structs
 
 # WORKFLOW DEFINITION
 workflow UnmappedBamToAlignedBam {
+
   input {
     SampleAndUnmappedBams sample_and_unmapped_bams
     GermlineSingleSampleReferences references
     PapiSettings papi_settings
+
+    File contamination_sites_ud
+    File contamination_sites_bed
+    File contamination_sites_mu
 
     String cross_check_fingerprints_by
     File? haplotype_database_file
@@ -167,9 +173,9 @@ workflow UnmappedBamToAlignedBam {
     input:
       input_bam = SortSampleBam.output_bam,
       input_bam_index = SortSampleBam.output_bam_index,
-      contamination_sites_ud = references.contamination_sites_ud,
-      contamination_sites_bed = references.contamination_sites_bed,
-      contamination_sites_mu = references.contamination_sites_mu,
+      contamination_sites_ud = contamination_sites_ud,
+      contamination_sites_bed = contamination_sites_bed,
+      contamination_sites_mu = contamination_sites_mu,
       ref_fasta = references.reference_fasta.ref_fasta,
       ref_fasta_index = references.reference_fasta.ref_fasta_index,
       output_prefix = sample_and_unmapped_bams.base_file_name + ".preBqsr",

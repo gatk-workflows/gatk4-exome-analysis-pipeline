@@ -34,8 +34,8 @@ task HaplotypeCaller_GATK35_GVCF {
     }
   }
 
-  Float ref_size = size(ref_fasta, "GB") + size(ref_fasta_index, "GB") + size(ref_dict, "GB")
-  Int disk_size = ceil(((size(input_bam, "GB") + 30) / hc_scatter) + ref_size) + 20
+  Float ref_size = size(ref_fasta, "GiB") + size(ref_fasta_index, "GiB") + size(ref_dict, "GiB")
+  Int disk_size = ceil(((size(input_bam, "GiB") + 30) / hc_scatter) + ref_size) + 20
 
   # We use interval_padding 500 below to make sure that the HaplotypeCaller has context on both sides around
   # the interval because the assembly uses them.
@@ -65,7 +65,7 @@ task HaplotypeCaller_GATK35_GVCF {
       --read_filter OverclippedRead
   }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.3.2-1510681135"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     preemptible: preemptible_tries
     memory: "10 GiB"
     cpu: "1"
@@ -161,7 +161,7 @@ task MergeVCFs {
       OUTPUT=~{output_vcf_name}
   }
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.1-1540490856"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
     preemptible: preemptible_tries
     memory: "3 GiB"
     disks: "local-disk ~{disk_size} HDD"
@@ -203,6 +203,113 @@ task HardFilterVcf {
     preemptible: preemptible_tries
     memory: "3 GiB"
     disks: "local-disk " + disk_size + " HDD"
+  }
+}
+
+task CNNScoreVariants {
+
+  input {
+    File? bamout
+    File? bamout_index
+    File input_vcf
+    File input_vcf_index
+    String vcf_basename
+    File ref_fasta
+    File ref_fasta_index
+    File ref_dict
+    Int preemptible_tries
+    String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.1.0.0"
+  }
+
+  Int disk_size = ceil(size(bamout, "GiB") + size(ref_fasta, "GiB") + (size(input_vcf, "GiB") * 2))
+
+  String base_vcf = basename(input_vcf)
+  Boolean is_compressed = basename(base_vcf, "gz") != base_vcf
+  String vcf_suffix = if is_compressed then ".vcf.gz" else ".vcf"
+  String vcf_index_suffix = if is_compressed then ".tbi" else ".idx"
+  String output_vcf = base_vcf + ".scored" + vcf_suffix
+  String output_vcf_index = output_vcf + vcf_index_suffix
+
+  String bamout_param = if defined(bamout) then "-I ~{bamout}" else ""
+  String tensor_type = if defined(bamout) then "read-tensor" else "reference"
+
+  command {
+     gatk --java-options -Xmx10g CNNScoreVariants \
+       -V ~{input_vcf} \
+       -R ~{ref_fasta} \
+       -O ~{output_vcf} \
+       ~{bamout_param} \
+       -tensor-type ~{tensor_type}
+  }
+
+  output {
+    File scored_vcf = "~{output_vcf}"
+    File scored_vcf_index = "~{output_vcf_index}"
+  }
+
+  runtime {
+    docker: gatk_docker
+    preemptible: preemptible_tries
+    memory: "15 GiB"
+    cpu: "2"
+    disks: "local-disk " + disk_size + " HDD"
+  }
+}
+
+task FilterVariantTranches {
+
+  input {
+    File input_vcf
+    File input_vcf_index
+    String vcf_basename
+    Array[String] snp_tranches
+    Array[String] indel_tranches
+    File hapmap_resource_vcf
+    File hapmap_resource_vcf_index
+    File omni_resource_vcf
+    File omni_resource_vcf_index
+    File one_thousand_genomes_resource_vcf
+    File one_thousand_genomes_resource_vcf_index
+    File dbsnp_resource_vcf
+    File dbsnp_resource_vcf_index
+    String info_key
+    Int preemptible_tries
+    String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.1.0.0"
+  }
+
+  Int disk_size = ceil(size(hapmap_resource_vcf, "GiB") +
+                        size(omni_resource_vcf, "GiB") +
+                        size(one_thousand_genomes_resource_vcf, "GiB") +
+                        size(dbsnp_resource_vcf, "GiB") +
+                        (size(input_vcf, "GiB") * 2)
+                      ) + 20
+
+  command {
+
+    gatk --java-options -Xmx6g FilterVariantTranches \
+      -V ~{input_vcf} \
+      -O ~{vcf_basename}.filtered.vcf.gz \
+      ~{sep=" " prefix("--snp-tranche ", snp_tranches)} \
+      ~{sep=" " prefix("--indel-tranche ", indel_tranches)} \
+      --resource ~{hapmap_resource_vcf} \
+      --resource ~{omni_resource_vcf} \
+      --resource ~{one_thousand_genomes_resource_vcf} \
+      --resource ~{dbsnp_resource_vcf} \
+      --info-key ~{info_key} \
+      --create-output-variant-index true
+  }
+
+  output {
+    File filtered_vcf = "~{vcf_basename}.filtered.vcf.gz"
+    File filtered_vcf_index = "~{vcf_basename}.filtered.vcf.gz.tbi"
+  }
+
+  runtime {
+    memory: "7 GiB"
+    cpu: "2"
+    disks: "local-disk " + disk_size + " HDD"
+    preemptible: preemptible_tries
+    docker: gatk_docker
   }
 }
 
