@@ -1,7 +1,7 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Qc.wdl" as QC
+import "../tasks/Utilities.wdl" as Utils
+import "../tasks/Qc.wdl" as QC
 
 workflow BamToCram {
 

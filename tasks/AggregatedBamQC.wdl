@@ -15,8 +15,8 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl"
+import "../tasks/Qc.wdl" as QC
+import "../structs/GermlineStructs.wdl"
 
 # WORKFLOW DEFINITION
 workflow AggregatedBamQC {
@@ -27,7 +27,7 @@ input {
     String sample_name
     String recalibrated_bam_base_name
     File? haplotype_database_file
-    GermlineSingleSampleReferences references
+    DNASeqSingleSampleReferences references
     PapiSettings papi_settings
   }
 

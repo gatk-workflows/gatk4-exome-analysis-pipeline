@@ -20,7 +20,7 @@ struct ReferenceFasta {
   File ref_pac
 }
 
-struct GermlineSingleSampleReferences {
+struct DNASeqSingleSampleReferences {
   File? fingerprint_genotypes_file
   File? fingerprint_genotypes_index
 
@@ -41,6 +41,7 @@ struct GermlineSingleSampleReferences {
   File dbsnp_vcf_index
 
   File evaluation_interval_list
+
 }
 
 struct ExomeGermlineSingleSampleOligos {

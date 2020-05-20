@@ -107,12 +107,13 @@ task MarkDuplicates {
     # This can be desirable if you don't mind the estimated library size being wrong and optical duplicate detection is taking >7 days and failing
     String? read_name_regex
     Int memory_multiplier = 1
+    Int additional_disk = 20
   }
 
   # The merged bam will be smaller than the sum of the parts so we need to account for the unmerged inputs and the merged output.
   # Mark Duplicates takes in as input readgroup bams and outputs a slightly smaller aggregated bam. Giving .25 as wiggleroom
   Float md_disk_multiplier = 3
-  Int disk_size = ceil(md_disk_multiplier * total_input_size) + 20
+  Int disk_size = ceil(md_disk_multiplier * total_input_size) + additional_disk
 
   Float memory_size = 7.5 * memory_multiplier
   Int java_memory_size = (ceil(memory_size) - 2)
@@ -271,12 +272,17 @@ task ApplyBQSR {
     Int preemptible_tries
     String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.0.10.1"
     Int memory_multiplier = 1
+    Int additional_disk = 20
+    Boolean bin_base_qualities = true
+    Boolean somatic = false
   }
 
   Float ref_size = size(ref_fasta, "GiB") + size(ref_fasta_index, "GiB") + size(ref_dict, "GiB")
-  Int disk_size = ceil((size(input_bam, "GiB") * 3 / bqsr_scatter) + ref_size) + 20
+  Int disk_size = ceil((size(input_bam, "GiB") * 3 / bqsr_scatter) + ref_size) + additional_disk
 
   Int memory_size = ceil(3500 * memory_multiplier)
+
+  Boolean bin_somatic_base_qualities = bin_base_qualities && somatic
 
   parameter_meta {
     input_bam: {
@@ -296,9 +302,11 @@ task ApplyBQSR {
       --use-original-qualities \
       -O ~{output_bam_basename}.bam \
       -bqsr ~{recalibration_report} \
-      --static-quantized-quals 10 \
-      --static-quantized-quals 20 \
-      --static-quantized-quals 30 \
+      ~{true='--static-quantized-quals 10' false='' bin_base_qualities} \
+      ~{true='--static-quantized-quals 20' false='' bin_base_qualities} \
+      ~{true='--static-quantized-quals 30' false='' bin_base_qualities} \
+      ~{true='--static-quantized-quals 40' false='' bin_somatic_base_qualities} \
+      ~{true='--static-quantized-quals 50' false='' bin_somatic_base_qualities} \
       -L ~{sep=" -L " sequence_group_interval}
   }
   runtime {

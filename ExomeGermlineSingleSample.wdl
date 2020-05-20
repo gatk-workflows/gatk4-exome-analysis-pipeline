@@ -28,23 +28,23 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/UnmappedBamToAlignedBam.wdl" as ToBam
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/AggregatedBamQC.wdl" as AggregatedQC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/BamToCram.wdl" as ToCram
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/VariantCalling.wdl" as ToGvcf
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl"
+import "./tasks/UnmappedBamToAlignedBam.wdl" as ToBam
+import "./tasks/AggregatedBamQC.wdl" as AggregatedQC
+import "./tasks/Qc.wdl" as QC
+import "./tasks/BamProcessing.wdl" as Processing
+import "./tasks/BamToCram.wdl" as ToCram
+import "./tasks/VariantCalling.wdl" as ToGvcf
+import "./structs/GermlineStructs.wdl"
 
 # WORKFLOW DEFINITION
 workflow ExomeGermlineSingleSample {
 
-  String pipeline_version = "1.3"
+  String pipeline_version = "1.5"
 
   input {
     PapiSettings papi_settings
     SampleAndUnmappedBams sample_and_unmapped_bams
-    GermlineSingleSampleReferences references
+    DNASeqSingleSampleReferences references
     File target_interval_list
     File bait_interval_list
     File bait_set_name

@@ -16,19 +16,19 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Alignment.wdl" as Alignment
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/SplitLargeReadGroup.wdl" as SplitRG
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Qc.wdl" as QC
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl" as Structs
+import "../tasks/Alignment.wdl" as Alignment
+import "../tasks/SplitLargeReadGroup.wdl" as SplitRG
+import "../tasks/Qc.wdl" as QC
+import "../tasks/BamProcessing.wdl" as Processing
+import "../tasks/Utilities.wdl" as Utils
+import "../structs/GermlineStructs.wdl" as Structs
 
 # WORKFLOW DEFINITION
 workflow UnmappedBamToAlignedBam {
 
   input {
     SampleAndUnmappedBams sample_and_unmapped_bams
-    GermlineSingleSampleReferences references
+    DNASeqSingleSampleReferences references
     PapiSettings papi_settings
 
     File contamination_sites_ud
@@ -39,6 +39,9 @@ workflow UnmappedBamToAlignedBam {
     File? haplotype_database_file
     Float lod_threshold
     String recalibrated_bam_basename
+    Boolean hard_clip_reads = false
+    Boolean bin_base_qualities = true
+    Boolean somatic = false
   }
 
   Float cutoff_for_large_rg_in_gb = 20.0
@@ -79,7 +82,8 @@ workflow UnmappedBamToAlignedBam {
           output_bam_basename = unmapped_bam_basename + ".aligned.unsorted",
           reference_fasta = references.reference_fasta,
           compression_level = compression_level,
-          preemptible_tries = papi_settings.preemptible_tries
+          preemptible_tries = papi_settings.preemptible_tries,
+          hard_clip_reads = hard_clip_reads
       }
     }
 
@@ -93,7 +97,8 @@ workflow UnmappedBamToAlignedBam {
           reference_fasta = references.reference_fasta,
           bwa_version = GetBwaVersion.bwa_version,
           compression_level = compression_level,
-          preemptible_tries = papi_settings.preemptible_tries
+          preemptible_tries = papi_settings.preemptible_tries,
+          hard_clip_reads = hard_clip_reads
       }
     }
 
@@ -232,7 +237,9 @@ workflow UnmappedBamToAlignedBam {
         ref_fasta_index = references.reference_fasta.ref_fasta_index,
         bqsr_scatter = bqsr_divisor,
         compression_level = compression_level,
-        preemptible_tries = papi_settings.agg_preemptible_tries
+        preemptible_tries = papi_settings.agg_preemptible_tries,
+        bin_base_qualities = bin_base_qualities,
+        somatic = somatic
     }
   }
 
