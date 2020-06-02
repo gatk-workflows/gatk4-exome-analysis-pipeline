@@ -18,7 +18,7 @@ version 1.0
 import "../tasks/Alignment.wdl" as Alignment
 import "../tasks/BamProcessing.wdl" as Processing
 import "../tasks/Utilities.wdl" as Utils
-import "../structs/GermlineStructs.wdl" as Structs
+import "../structs/DNASeqStructs.wdl" as Structs
 
 workflow SplitLargeReadGroup {
 

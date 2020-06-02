@@ -21,7 +21,7 @@ import "../tasks/SplitLargeReadGroup.wdl" as SplitRG
 import "../tasks/Qc.wdl" as QC
 import "../tasks/BamProcessing.wdl" as Processing
 import "../tasks/Utilities.wdl" as Utils
-import "../structs/GermlineStructs.wdl" as Structs
+import "../structs/DNASeqStructs.wdl" as Structs
 
 # WORKFLOW DEFINITION
 workflow UnmappedBamToAlignedBam {
@@ -36,7 +36,7 @@ workflow UnmappedBamToAlignedBam {
     File contamination_sites_mu
 
     String cross_check_fingerprints_by
-    File? haplotype_database_file
+    File haplotype_database_file
     Float lod_threshold
     String recalibrated_bam_basename
     Boolean hard_clip_reads = false

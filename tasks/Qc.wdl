@@ -242,7 +242,7 @@ task CrossCheckFingerprints {
   input {
     Array[File] input_bams
     Array[File] input_bam_indexes
-    File? haplotype_database_file
+    File haplotype_database_file
     String metrics_filename
     Float total_input_size
     Int preemptible_tries
@@ -281,7 +281,7 @@ task CheckFingerprint {
     File input_bam
     File input_bam_index
     String output_basename
-    File? haplotype_database_file
+    File haplotype_database_file
     File? genotypes
     File? genotypes_index
     String sample

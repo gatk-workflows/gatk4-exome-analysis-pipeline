@@ -34,29 +34,36 @@ import "./tasks/Qc.wdl" as QC
 import "./tasks/BamProcessing.wdl" as Processing
 import "./tasks/BamToCram.wdl" as ToCram
 import "./tasks/VariantCalling.wdl" as ToGvcf
-import "./structs/GermlineStructs.wdl"
+import "./structs/DNASeqStructs.wdl"
 
 # WORKFLOW DEFINITION
 workflow ExomeGermlineSingleSample {
 
-  String pipeline_version = "1.5"
+  String pipeline_version = "2.0"
 
   input {
     PapiSettings papi_settings
     SampleAndUnmappedBams sample_and_unmapped_bams
     DNASeqSingleSampleReferences references
+    VariantCallingScatterSettings scatter_settings
+
+    File? fingerprint_genotypes_file
+    File? fingerprint_genotypes_index
+
     File target_interval_list
     File bait_interval_list
     File bait_set_name
 
     Boolean provide_bam_output = false
-    File? haplotype_database_file
   }
 
   # Not overridable:
   Float lod_threshold = -10.0
   String cross_check_fingerprints_by = "READGROUP"
   String recalibrated_bam_basename = sample_and_unmapped_bams.base_file_name + ".aligned.duplicates_marked.recalibrated"
+
+  String final_gvcf_base_name = select_first([sample_and_unmapped_bams.final_gvcf_base_name, sample_and_unmapped_bams.base_file_name])
+
 
   call Processing.GenerateSubsettedContaminationResources {
     input:
@@ -79,7 +86,7 @@ workflow ExomeGermlineSingleSample {
       contamination_sites_mu = GenerateSubsettedContaminationResources.subsetted_contamination_mu,
 
       cross_check_fingerprints_by = cross_check_fingerprints_by,
-      haplotype_database_file = haplotype_database_file,
+      haplotype_database_file = references.haplotype_database_file,
       lod_threshold = lod_threshold,
       recalibrated_bam_basename = recalibrated_bam_basename
   }
@@ -91,8 +98,10 @@ workflow ExomeGermlineSingleSample {
       base_name = sample_and_unmapped_bams.base_file_name,
       sample_name = sample_and_unmapped_bams.sample_name,
       recalibrated_bam_base_name = recalibrated_bam_basename,
-      haplotype_database_file = haplotype_database_file,
+      haplotype_database_file = references.haplotype_database_file,
       references = references,
+      fingerprint_genotypes_file = fingerprint_genotypes_file,
+      fingerprint_genotypes_index = fingerprint_genotypes_index,
       papi_settings = papi_settings
   }
 
@@ -112,8 +121,8 @@ workflow ExomeGermlineSingleSample {
     input:
       calling_interval_list = references.calling_interval_list,
       evaluation_interval_list = references.evaluation_interval_list,
-      haplotype_scatter_count = references.haplotype_scatter_count,
-      break_bands_at_multiples_of = references.break_bands_at_multiples_of,
+      haplotype_scatter_count = scatter_settings.haplotype_scatter_count,
+      break_bands_at_multiples_of = scatter_settings.break_bands_at_multiples_of,
       contamination = UnmappedBamToAlignedBam.contamination,
       input_bam = UnmappedBamToAlignedBam.output_bam,
       ref_fasta = references.reference_fasta.ref_fasta,
@@ -122,7 +131,7 @@ workflow ExomeGermlineSingleSample {
       dbsnp_vcf = references.dbsnp_vcf,
       dbsnp_vcf_index = references.dbsnp_vcf_index,
       base_file_name = sample_and_unmapped_bams.base_file_name,
-      final_vcf_base_name = sample_and_unmapped_bams.final_gvcf_base_name,
+      final_vcf_base_name = final_gvcf_base_name,
       agg_preemptible_tries = papi_settings.agg_preemptible_tries
   }
 
