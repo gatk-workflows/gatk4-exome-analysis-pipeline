@@ -15,10 +15,10 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "../tasks/Alignment.wdl" as Alignment
-import "../tasks/BamProcessing.wdl" as Processing
-import "../tasks/Utilities.wdl" as Utils
-import "../structs/DNASeqStructs.wdl" as Structs
+import "./tasks/Alignment.wdl" as Alignment
+import "./tasks/BamProcessing.wdl" as Processing
+import "./tasks/Utilities.wdl" as Utils
+import "./structs/DNASeqStructs.wdl" as Structs
 
 workflow SplitLargeReadGroup {
 
