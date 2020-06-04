@@ -2,7 +2,7 @@ version 1.0
 
 struct SampleAndUnmappedBams {
   String base_file_name
-  String final_gvcf_base_name
+  String? final_gvcf_base_name
   Array[File] flowcell_unmapped_bams
   String sample_name
   String unmapped_bam_suffix
@@ -20,17 +20,11 @@ struct ReferenceFasta {
   File ref_pac
 }
 
-struct GermlineSingleSampleReferences {
-  File? fingerprint_genotypes_file
-  File? fingerprint_genotypes_index
-
+struct DNASeqSingleSampleReferences {
   File contamination_sites_ud
   File contamination_sites_bed
   File contamination_sites_mu
   File calling_interval_list
-
-  Int haplotype_scatter_count
-  Int break_bands_at_multiples_of
 
   ReferenceFasta reference_fasta
 
@@ -41,6 +35,13 @@ struct GermlineSingleSampleReferences {
   File dbsnp_vcf_index
 
   File evaluation_interval_list
+
+  File haplotype_database_file
+}
+
+struct VariantCallingScatterSettings {
+   Int haplotype_scatter_count
+   Int break_bands_at_multiples_of
 }
 
 struct ExomeGermlineSingleSampleOligos {

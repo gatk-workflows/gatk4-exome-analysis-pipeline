@@ -15,7 +15,7 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl"
+import "../structs/DNASeqStructs.wdl"
 
 # Get version of BWA
 task GetBwaVersion {
@@ -50,6 +50,7 @@ task SamToFastqAndBwaMemAndMba {
 
     Int compression_level
     Int preemptible_tries
+    Boolean hard_clip_reads = false
   }
 
   Float unmapped_bam_size = size(input_bam, "GiB")
@@ -91,6 +92,8 @@ task SamToFastqAndBwaMemAndMba {
         IS_BISULFITE_SEQUENCE=false \
         ALIGNED_READS_ONLY=false \
         CLIP_ADAPTERS=false \
+        ~{true='CLIP_OVERLAPPING_READS=true' false="" hard_clip_reads} \
+        ~{true='CLIP_OVERLAPPING_READS_OPERATOR=H' false="" hard_clip_reads} \
         MAX_RECORDS_IN_RAM=2000000 \
         ADD_MATE_CIGAR=true \
         MAX_INSERTIONS_OR_DELETIONS=-1 \
@@ -113,7 +116,7 @@ task SamToFastqAndBwaMemAndMba {
     fi
   >>>
   runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
+    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330" # TODO: update docker to use the new Picard options
     preemptible: preemptible_tries
     memory: "14 GiB"
     cpu: "16"

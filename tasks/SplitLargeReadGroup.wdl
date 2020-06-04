@@ -15,12 +15,13 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Alignment.wdl" as Alignment
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/BamProcessing.wdl" as Processing
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/tasks/Utilities.wdl" as Utils
-import "https://raw.githubusercontent.com/gatk-workflows/gatk4-exome-analysis-pipeline/1.2.0/structs/GermlineStructs.wdl" as Structs
+import "../tasks/Alignment.wdl" as Alignment
+import "../tasks/BamProcessing.wdl" as Processing
+import "../tasks/Utilities.wdl" as Utils
+import "../structs/DNASeqStructs.wdl" as Structs
 
 workflow SplitLargeReadGroup {
+
   input {
     File input_bam
 
@@ -36,6 +37,7 @@ workflow SplitLargeReadGroup {
     Int compression_level
     Int preemptible_tries
     Int reads_per_file = 48000000
+    Boolean hard_clip_reads = false
   }
 
   call Alignment.SamSplitter as SamSplitter {
@@ -58,7 +60,8 @@ workflow SplitLargeReadGroup {
         reference_fasta = reference_fasta,
         bwa_version = bwa_version,
         compression_level = compression_level,
-        preemptible_tries = preemptible_tries
+        preemptible_tries = preemptible_tries,
+        hard_clip_reads = hard_clip_reads
     }
 
     Float current_mapped_size = size(SamToFastqAndBwaMemAndMba.output_bam, "GiB")

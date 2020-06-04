@@ -35,7 +35,12 @@
     "contamination_sites_bed": "gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.contam.bed",
     "contamination_sites_mu": "gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.contam.mu",
     "evaluation_interval_list": "gs://gcp-public-data--broad-references/hg38/v0/exome_evaluation_regions.v1.interval_list",
-    "haplotype_scatter_count": 50 
+    "haplotype_database_file": "gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.haplotype_database.txt"
+  },
+
+  "ExomeGermlineSingleSample.scatter_settings": {
+    "haplotype_scatter_count": 10,
+    "break_bands_at_multiples_of": 0
   },
 
   "ExomeGermlineSingleSample.target_interval_list": "gs://gcp-public-data--broad-references/hg38/v0/exome_calling_regions.v1.interval_list",
