@@ -17,30 +17,11 @@ version 1.0
 
 import "../structs/DNASeqStructs.wdl"
 
-# Get version of BWA
-task GetBwaVersion {
-  command {
-    # not setting set -o pipefail here because /bwa has a rc=1 and we dont want to allow rc=1 to succeed because
-    # the sed may also fail with that error and that is something we actually want to fail on.
-    /usr/gitc/bwa 2>&1 | \
-    grep -e '^Version' | \
-    sed 's/Version: //'
-  }
-  runtime {
-    docker: "us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.4.3-1564508330"
-    memory: "1 GiB"
-  }
-  output {
-    String bwa_version = read_string(stdout())
-  }
-}
-
 # Read unmapped BAM, convert on-the-fly to FASTQ and stream to BWA MEM for alignment, then stream to MergeBamAlignment
 task SamToFastqAndBwaMemAndMba {
   input {
     File input_bam
     String bwa_commandline
-    String bwa_version
     String output_bam_basename
 
     # reference_fasta.ref_alt is the .alt file from bwa-kit
@@ -62,8 +43,20 @@ task SamToFastqAndBwaMemAndMba {
   Int disk_size = ceil(unmapped_bam_size + bwa_ref_size + (disk_multiplier * unmapped_bam_size) + 20)
 
   command <<<
+
+
+    # This is done before "set -o pipefail" because "bwa" will have a rc=1 and we don't want to allow rc=1 to succeed
+    # because the sed may also fail with that error and that is something we actually want to fail on.
+    BWA_VERSION=$(/usr/gitc/bwa 2>&1 | \
+    grep -e '^Version' | \
+    sed 's/Version: //')
+
     set -o pipefail
     set -e
+
+    if [-z ${BWA_VERSION}]; then
+        exit 1;
+    fi
 
     # set the bash variable needed for the command-line
     bash_ref_fasta=~{reference_fasta.ref_fasta}
@@ -99,7 +92,7 @@ task SamToFastqAndBwaMemAndMba {
         MAX_INSERTIONS_OR_DELETIONS=-1 \
         PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
         PROGRAM_RECORD_ID="bwamem" \
-        PROGRAM_GROUP_VERSION="~{bwa_version}" \
+        PROGRAM_GROUP_VERSION="${BWA_VERSION}" \
         PROGRAM_GROUP_COMMAND_LINE="~{bwa_commandline}" \
         PROGRAM_GROUP_NAME="bwamem" \
         UNMAPPED_READ_STRATEGY=COPY_TO_TAG \
