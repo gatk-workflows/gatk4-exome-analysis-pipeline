@@ -1,7 +1,10 @@
 # gatk4-exome-analysis-pipeline
 
 ### Purpose :
-This WDL pipeline implements data pre-processing and initial variant calling according to the GATK Best Practices for germline SNP and Indel discovery in human exome sequencing data.
+This WDL pipeline implements data pre-processing and initial variant calling according to the [GATK Best Practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535912) for germline SNP and Indel discovery in human exome sequencing data. The workflow takes as input an array of unmapped BAM files (all belonging to the same sample) to perform preprocessing tasks such as mapping, marking duplicates, and base recalibration then uses Haplotypecaller generate a GVCF or VCF. By default the workflow produces a single CRAM file and a GVCF to be used in [joint calling](https://gatk.broadinstitute.org/hc/en-us/articles/360035890431), but can be set to directly output a VCF instead of a GVCF.
+
+- If you are starting with FASTQ files visit the [seq-format-conversion](https://github.com/gatk-workflows/seq-format-conversion) repository for workflows to convert FASTQs to unmapped BAMS.
+- The CRAM output from this workflow can be used to perform a variety of other analysis like somatic short variant discovery, germline short variant discovery, or germline copy number variant discovery. Visit the GATK Best Practices documentation to determine what [Best Practices Workflows](https://gatk.broadinstitute.org/hc/en-us/sections/360007226651) are vailable for BAM files.
 
 ### Requirements/expectations :
 - Human exome sequencing data in unmapped BAM (uBAM) format
@@ -24,7 +27,7 @@ This WDL pipeline implements data pre-processing and initial variant calling acc
 ### Software version notes :
 - GATK 4 or later 
 - Cromwell version support 
-  - Successfully tested on v50 
+  - Successfully tested on v52
 
 ### Important Notes :
 - Runtime parameters are optimized for Broad's Google Cloud Platform implementation.

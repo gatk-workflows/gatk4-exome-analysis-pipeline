@@ -50,10 +50,6 @@ workflow UnmappedBamToAlignedBam {
 
   Int compression_level = 2
 
-  # Get the version of BWA to include in the PG record in the header of the BAM produced
-  # by MergeBamAlignment.
-  call Alignment.GetBwaVersion
-
   # Get the size of the standard reference files as well as the additional reference files needed for BWA
 
   # Align flowcell-level unmapped input bams in parallel
@@ -78,7 +74,6 @@ workflow UnmappedBamToAlignedBam {
         input:
           input_bam = unmapped_bam,
           bwa_commandline = bwa_commandline,
-          bwa_version = GetBwaVersion.bwa_version,
           output_bam_basename = unmapped_bam_basename + ".aligned.unsorted",
           reference_fasta = references.reference_fasta,
           compression_level = compression_level,
@@ -95,7 +90,6 @@ workflow UnmappedBamToAlignedBam {
           bwa_commandline = bwa_commandline,
           output_bam_basename = unmapped_bam_basename + ".aligned.unsorted",
           reference_fasta = references.reference_fasta,
-          bwa_version = GetBwaVersion.bwa_version,
           compression_level = compression_level,
           preemptible_tries = papi_settings.preemptible_tries,
           hard_clip_reads = hard_clip_reads
