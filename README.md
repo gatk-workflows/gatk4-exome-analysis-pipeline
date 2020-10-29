@@ -1,3 +1,5 @@
+### **This repository has now been archived. The new home for the Broad exome germline pipeline is in the [WARP](https://github.com/broadinstitute/warp) repository. The workflows are also accessible from the [WARP Dockstore Collection](https://dockstore.org/organizations/BroadInstitute/collections/WARPpipelines) **
+
 # gatk4-exome-analysis-pipeline
 
 ### Purpose :
